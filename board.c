@@ -3,7 +3,38 @@
 #include <string.h>
 #include <assert.h>
 #include <ctype.h>
-#include "piece.h"
+#include "board.h"
+
+
+/* 
+ * Starting Board
+ * startPieces has piece information
+ * startColors has color information
+ */
+
+/*
+int startPieces[64] = {
+  ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK,
+  PAWN, PAWN,   PAWN,   PAWN,  PAWN, PAWN,   PAWN,   PAWN,
+  EMPTY,EMPTY,  EMPTY,  EMPTY, EMPTY,EMPTY,  EMPTY,  EMPTY, 
+  EMPTY,EMPTY,  EMPTY,  EMPTY, EMPTY,EMPTY,  EMPTY,  EMPTY,
+  EMPTY,EMPTY,  EMPTY,  EMPTY, EMPTY,EMPTY,  EMPTY,  EMPTY,
+  EMPTY,EMPTY,  EMPTY,  EMPTY, EMPTY,EMPTY,  EMPTY,  EMPTY,
+  PAWN, PAWN,   PAWN,   PAWN,  PAWN, PAWN,   PAWN,   PAWN,
+  ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK
+};
+
+int startColors[64] = {
+  WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
+  WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE, WHITE,
+  EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+  EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+  EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+  EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY,
+  BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK,
+  BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK
+};
+*/
 
 int valid(int square) {
   return 0 <= square && square < 64;
@@ -100,6 +131,42 @@ int northwest(int square) {
   return north(west(square));
 }
 
+char pieceChar(int piece, int color) {
+  char c;
+  switch(piece) {
+    case KING:
+      c = 'k';
+      break;
+    case QUEEN:
+      c = 'q';
+      break;
+    case BISHOP:
+      c = 'b';
+      break;
+    case KNIGHT:
+      c = 'n';
+      break;
+    case ROOK:
+      c = 'r';
+      break;
+    case PAWN:
+      c = 'p';
+      break;
+    case EMPTY:
+      c = ' ';
+      break;
+    default:
+      return '?';
+      break;
+  }
+
+  if(color == 2) {
+    c = c - 'a' + 'A';
+  }
+
+  return c;
+}
+
 char* pieceToString(Piece* p) {
   switch(p->id) {
     case KING:
@@ -144,7 +211,7 @@ char pieceToChar(Piece* p) {
       return 'R';
       break;
     case PAWN:
-    /* The Pawn does not have its own unique character */
+      /* The Pawn does not have its own unique character */
     default:
       return 'X';
   }
@@ -171,3 +238,24 @@ int charToPieceID(char c) {
       return -1;
   }
 }
+
+/* prints simple board from white's perspective */
+void printBoardSimple(int pieces[64], int colors[64]) {
+  printf("Simple Board:\n\n");
+  for(int r = 7; r >= 0; r--) {
+    printf("%c\t", '1'+r);
+    for(int c = 0; c < 8; c++) {
+      char p = pieceChar(pieces[8*r+c], colors[8*r+c]);
+      p = (p == ' ') ? '.' : p;
+      printf("%c ", p);
+    }
+    printf("\n");
+  }
+  printf("\n\t");
+  for(int i = 0; i < 8; i++) {
+    printf("%c ", 'a'+i);
+  }
+  printf("\n");
+}
+
+

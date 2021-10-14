@@ -3,12 +3,16 @@
  * Contains the types used for the game
  */
 
-#define KING 0
-#define QUEEN 1
-#define BISHOP 2
-#define KNIGHT 3
+#define EMPTY 0
+#define PAWN 1
+#define KNIGHT 2
+#define BISHOP 3
 #define ROOK 4
-#define PAWN 5
+#define QUEEN 5
+#define KING 6
+
+#define WHITE 1
+#define BLACK 2
 
 #define A 1
 #define B 2
@@ -101,7 +105,13 @@ int southwest(int square);
 int west(int square);
 int northwest(int square);
 
+char pieceChar(int piece, int color);
 char* pieceToString(Piece* p);
 char pieceToChar(Piece* p);
 int charToPieceID(char c);
+
+void printBoardSimple(int pieces[64], int colors[64]);
+
+
+
 

@@ -21,7 +21,6 @@ void pushFrontList(LList* list, void* data);
 void* popFrontList(LList* list);
 
 int lengthList(LList* list);
-
 /* 
  * set the head to the node at index i
  * in other words, cut off the first i elements
