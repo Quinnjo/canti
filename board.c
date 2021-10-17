@@ -12,7 +12,6 @@
  * startColors has color information
  */
 
-/*
 int startPieces[64] = {
   ROOK, KNIGHT, BISHOP, QUEEN, KING, BISHOP, KNIGHT, ROOK,
   PAWN, PAWN,   PAWN,   PAWN,  PAWN, PAWN,   PAWN,   PAWN,
@@ -34,7 +33,6 @@ int startColors[64] = {
   BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK,
   BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK, BLACK
 };
-*/
 
 int valid(int square) {
   return 0 <= square && square < 64;
@@ -131,9 +129,9 @@ int northwest(int square) {
   return north(west(square));
 }
 
-char pieceChar(int piece, int color) {
+char pieceChar(Piece* piece) {
   char c;
-  switch(piece) {
+  switch(piece->id) {
     case KING:
       c = 'k';
       break;
@@ -160,7 +158,7 @@ char pieceChar(int piece, int color) {
       break;
   }
 
-  if(color == 2) {
+  if(piece->color == 2) {
     c = c - 'a' + 'A';
   }
 
@@ -239,23 +237,83 @@ int charToPieceID(char c) {
   }
 }
 
+void makeBoard(Board board) {
+  for(int i = 0; i < 64; i++) {
+    board[i] = (Piece*)malloc(sizeof(Piece));
+    board[i]->id = startPieces[i];
+    board[i]->color = startColors[i];
+  }
+}
+
+void freeBoard(Board board) {
+  for(int i = 0; i < 64; i++) {
+    free(board[i]);
+  }
+}
+
 /* prints simple board from white's perspective */
-void printBoardSimple(int pieces[64], int colors[64]) {
+void printBoardSimple(Board board) {
   printf("Simple Board:\n\n");
   for(int r = 7; r >= 0; r--) {
-    printf("%c\t", '1'+r);
+    printf("\t%c\t", '1'+r); /* rank number */
     for(int c = 0; c < 8; c++) {
-      char p = pieceChar(pieces[8*r+c], colors[8*r+c]);
+      char p = pieceChar(board[8*r+c]);
       p = (p == ' ') ? '.' : p;
       printf("%c ", p);
     }
     printf("\n");
   }
-  printf("\n\t");
+  printf("\n\t\t");
   for(int i = 0; i < 8; i++) {
-    printf("%c ", 'a'+i);
+    printf("%c ", 'a'+i); /* file letter */
   }
   printf("\n");
+}
+
+
+#define BOARD_FILE_LENGTH 772
+char* board_white() {
+  char* buf = malloc(BOARD_FILE_LENGTH);
+  FILE* f = fopen("./board_white.txt", "r");
+  int bytes_read = fread(buf, sizeof(char), 772, f);
+  printf("%d\n", bytes_read);
+  printf("%s\n", buf);
+  fclose(f);
+  return buf;
+}
+
+char* board_black() {
+  char* buf = malloc(BOARD_FILE_LENGTH);
+  FILE* f = fopen("./board_black.txt", "r");
+  int bytes_read = fread(buf, sizeof(char), 772, f);
+  printf("%d\n", bytes_read);
+  printf("%s\n", buf);
+  fclose(f);
+  return buf;
+}
+
+
+/*
+ * TODO: Clean up magic numbers in these functions
+ */
+char* boardStrWhite(Board board) {
+  char* str = board_white();
+  for(int r = 0; r < 8; r++) {
+    for(int c = 0; c < 8; c++) {
+      str[655-86*r + 4*c] = pieceChar(board[8*r+c]);
+    }
+  }
+  return str;
+}
+
+char* boardStrBlack(Board board) {
+  char* str = board_black();
+  for(int r = 0; r < 8; r++) {
+    for(int c = 0; c < 8; c++) {
+      str[81+86*r - 4*c] = pieceChar(board[8*r+c]);
+    }
+  }
+  return str;
 }
 
 

@@ -1,3 +1,5 @@
+#ifndef BOARD_H
+#define BOARD_H
 
 /*
  * Contains the types used for the game
@@ -53,11 +55,13 @@
  */
 
 
+
 typedef struct Piece {
   int id;
   int color;
-  int square;
 } Piece;
+
+typedef Piece** Board;
 
 typedef struct Move {
   Piece* piece;
@@ -105,13 +109,20 @@ int southwest(int square);
 int west(int square);
 int northwest(int square);
 
-char pieceChar(int piece, int color);
+char pieceChar(Piece* piece);
 char* pieceToString(Piece* p);
 char pieceToChar(Piece* p);
 int charToPieceID(char c);
 
-void printBoardSimple(int pieces[64], int colors[64]);
+/* 
+ * Allocate/Free each piece on the board in memory
+ * Should receive a board with space for 64 pieces
+ */
+void makeBoard(Board board);
+void freeBoard(Board board);
 
+void printBoardSimple(Board board);
+char* boardStrWhite(Board board);
+char* boardStrBlack(Board board);
 
-
-
+#endif

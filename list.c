@@ -17,7 +17,7 @@ void freeList(LList* list) {
     free(cur);
     cur = nxt;
   }
-  initList(list);
+  initList(list, list->data_sz);
 }
 
 void pushBackList(LList* list, void* data) {
@@ -38,7 +38,7 @@ void* popBackList(LList* list) {
   assert(list->head && list->tail && list->len > 0);
   void* popped = list->tail->data;
   if(list->head == list->tail) {
-    initList(list);
+    initList(list, list->data_sz);
   } else{
     LLNode* pen = list->head;
     while(pen->next->next) {
@@ -56,6 +56,7 @@ void pushFrontList(LList* list, void* data) {
   LLNode* new = (LLNode*)malloc(sizeof(LLNode));
   new->data = data;
   new->next = list->head;
+  list->head = new;
   if(list->len == 0) {
     list->tail = new;
   }
@@ -66,7 +67,7 @@ void* popFrontList(LList* list) {
   assert(list->head && list->tail && list->len > 0);
   void* popped = list->head->data;
   if(list->head == list->tail) {
-    initList(list);
+    initList(list, list->data_sz);
   } else {
     LLNode* sec = list->head->next;
     free(list->head);
@@ -76,6 +77,27 @@ void* popFrontList(LList* list) {
   return popped;
 }
 
+void* peekBackList(LList* list) {
+  assert(list->tail && list->len > 0);
+  return list->tail->data;
+}
+
+void* peekFrontList(LList* list) {
+  assert(list->head && list->len > 0);
+  return list->head->data;
+}
+
+void* itemAtIndex(LList* list, int i) {
+  assert(i >= 0 && i < list->len && list->head);
+  int j = 0;
+  LLNode* n = list->head;
+  while(j != i) {
+    n = n->next;
+    j++;
+  }
+  return n->data;
+}
+    
 int lengthList(LList* list) {
   return list->len;
 }
@@ -85,7 +107,7 @@ void resetHead(LList* list, int i) {
   int c = 0;
   while(c < i) {
     if(cur == NULL) {
-      initList(list);
+      initList(list, list->data_sz);
       return;
     }
     free(cur->data);
@@ -94,25 +116,4 @@ void resetHead(LList* list, int i) {
   }
   list->head = cur;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
