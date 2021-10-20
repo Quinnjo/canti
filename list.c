@@ -1,11 +1,12 @@
 #include <assert.h>
+#include <stdlib.h>
+#include <string.h>
 #include "list.h"
 
-void initList(LList* list, int data_sz) {
+void initList(LList* list) {
   list->head = NULL;
   list->tail = NULL;
   list->len = 0;
-  list->data_sz = data_sz;
 }
 
 void freeList(LList* list) {
@@ -17,12 +18,13 @@ void freeList(LList* list) {
     free(cur);
     cur = nxt;
   }
-  initList(list, list->data_sz);
+  initList(list);
 }
 
-void pushBackList(LList* list, void* data) {
+void pushBackList(LList* list, void* data, int data_sz) {
   LLNode* new = (LLNode*)malloc(sizeof(LLNode));
-  new->data = data;
+  new->data = malloc(data_sz);
+  memcpy(new->data, data, data_sz);
   new->next = NULL;
   if(list->len == 0) {
     list->head = new;
@@ -38,7 +40,8 @@ void* popBackList(LList* list) {
   assert(list->head && list->tail && list->len > 0);
   void* popped = list->tail->data;
   if(list->head == list->tail) {
-    initList(list, list->data_sz);
+    free(list->head);
+    initList(list);
   } else{
     LLNode* pen = list->head;
     while(pen->next->next) {
@@ -52,9 +55,10 @@ void* popBackList(LList* list) {
   return popped;
 }
 
-void pushFrontList(LList* list, void* data) {
+void pushFrontList(LList* list, void* data, int data_sz) {
   LLNode* new = (LLNode*)malloc(sizeof(LLNode));
-  new->data = data;
+  new->data = malloc(data_sz);
+  memcpy(new->data, data, data_sz);
   new->next = list->head;
   list->head = new;
   if(list->len == 0) {
@@ -67,7 +71,8 @@ void* popFrontList(LList* list) {
   assert(list->head && list->tail && list->len > 0);
   void* popped = list->head->data;
   if(list->head == list->tail) {
-    initList(list, list->data_sz);
+    free(list->head);
+    initList(list);
   } else {
     LLNode* sec = list->head->next;
     free(list->head);
@@ -107,7 +112,7 @@ void resetHead(LList* list, int i) {
   int c = 0;
   while(c < i) {
     if(cur == NULL) {
-      initList(list, list->data_sz);
+      initList(list);
       return;
     }
     free(cur->data);
@@ -116,4 +121,22 @@ void resetHead(LList* list, int i) {
   }
   list->head = cur;
 }
+
+LList* combineLLists(LList* L1, LList* L2) {
+  assert(L1 && L2 && L1 != L2);
+  LList* new = (LList*)malloc(sizeof(LList));
+  initList(new);
+  new->head = L1->head;
+  new->tail = L2->tail;
+  L1->tail->next = L2->head;
+  new->len = L1->len + L2->len;
+  free(L1);
+  free(L2);
+  return new;
+}
+
+
+
+
+
 

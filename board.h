@@ -63,18 +63,6 @@ typedef struct Piece {
 
 typedef Piece** Board;
 
-typedef struct Move {
-  Piece* piece;
-  int start_square;
-  int end_square;
-
-  /* Other potential fields:
-   * Number
-   * Flags (e.p.)
-   */
-
-} Move;
-
 /*
  * Return 1 if square is valid (0 <= square < 64)
  * Return 0 otherwise
