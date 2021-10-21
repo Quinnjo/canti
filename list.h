@@ -39,4 +39,10 @@ void resetHead(LList* list, int i);
  */
 LList* combineLLists(LList* L1, LList* L2);
 
+/*
+ * remove the node at index i
+ * free the data in that node and the node itself
+ */
+void removeIndex(LList* list, int i);
+
 #endif

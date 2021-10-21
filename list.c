@@ -125,6 +125,16 @@ void resetHead(LList* list, int i) {
 LList* combineLLists(LList* L1, LList* L2) {
   assert(L1 && L2 && L1 != L2);
   LList* new = (LList*)malloc(sizeof(LList));
+
+  /* if L1 is empty, return a shallow copy of L2 */
+  if(L1->len == 0) {
+    new->head = L2->head;
+    new->tail = L2->tail;
+    new->len = L2->len;
+    free(L1);
+    free(L2);
+    return new;
+  }
   initList(new);
   new->head = L1->head;
   new->tail = L2->tail;
@@ -135,8 +145,25 @@ LList* combineLLists(LList* L1, LList* L2) {
   return new;
 }
 
+void removeIndex(LList* list, int i) {
+  assert(list && i >= 0 && i < list->len && list->len > 0);
+  LLNode *prv, *cur;
+  prv = NULL;
+  cur = list->head;
+  int j = 0;
+  while(j != i) {
+    prv = cur;
+    cur = cur->next;   
+    j++;
+  }
+  if(prv) {
+    prv->next = cur->next;
+  } else {
+    list->head = cur->next;
+  }
+  free(cur->data);
+  free(cur);
+  list->len -= 1;
 
-
-
-
+}
 

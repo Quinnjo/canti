@@ -10,7 +10,7 @@ typedef struct Position {
    * EX: board[3]->color returns the color of the piece on d1
    */
   Board board;
-  int toMove; /* 1 for white, 2 for black */
+  int toMove; /* WHITE or BLACK */
   /* true (1) or false (0) values */
   int whiteCastlingRights;
   int blackCastlingRights;
@@ -58,22 +58,42 @@ typedef struct Move {
  */
 
 /*
- * Generate all the legal moves that can be played in position
- * Receives a LList* of Move* to place legal moves in, returns when done
- * Receives a Position*
+ * returns a new position made from performing the move, legal or otherwise
+ * caller should free the return position
  */
-LList* genLegalMoves(LList* moves, Position* pos);
-LList* genLegalMovesAtSquare(LList* moves, Position* pos);
+Position* genPositionFromMove(Move* move, Position* pos);
+
+/*
+ * return 0 if neither player in check
+ * return WHITE if white in check
+ * return BLACK if black in check
+ * return WHITE + BLACK if both in check
+ * return -1 on error
+ */
+int inCheck(Position* pos);
+
+/*
+ * Generate all the legal moves that can be played in position
+ * Allocates a new LList of moves that the caller must free
+ * Receives a Position*
+ *
+ * pruneLegalMoves removes moves that would place the player in check or
+ * fail to remove them from check
+ */
+LList* genLegalMoves(Position* pos);
+LList* genLegalMovesAtSquare(Position* pos, int square);
+LList* pruneLegalMoves(LList* moves, Position* pos);
 /*
  * Generate all the legal moves for a specific piece on a square
- * Must receive an empty LList, the caller should free the list when finished
+ * Creates a new list that the caller should free when finished
+ * Does not account for checks -- these moves should be pruned with pruneLegalMoves()
  */
-LList* genPawnMoves(LList* moves, Position* pos, int square);
-LList* genKnightMoves(LList* moves, Position* pos, int square);
-LList* genBishopMoves(LList* moves, Position* pos, int square);
-LList* genRookMoves(LList* moves, Position* pos, int square);
-LList* genQueenMoves(LList* moves, Position* pos, int square);
-LList* genKingMoves(LList* moves, Position* pos, int square);
+LList* genPawnMoves(Position* pos, int square);
+LList* genKnightMoves(Position* pos, int square);
+LList* genBishopMoves(Position* pos, int square);
+LList* genRookMoves(Position* pos, int square);
+LList* genQueenMoves(Position* pos, int square);
+LList* genKingMoves(Position* pos, int square);
 
 /* return 1 if move is legal, 0 otherwise */
 int checkLegalMove(Move* move, Position* pos);
