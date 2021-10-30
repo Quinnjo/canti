@@ -61,12 +61,13 @@ int squareFromString(char* str) {
  * puts the result in the passed buffer str
  * str should have enough space for 2 characters
  */
-void squareToString(char str[2], int square) {
+void squareToString(char str[3], int square) {
   assert(valid(square));
   int f = file(square);
   int r = rank(square);
   str[0] = f - 1 + 'a';
   str[1] = r + '0';
+  str[2] = 0;
 }
 
 int squareFromCoords(int file, int rank) {
@@ -271,27 +272,37 @@ void printBoardSimple(Board board) {
 }
 
 
-#define BOARD_FILE_LENGTH 772
 char* board_white() {
-  char* buf = malloc(BOARD_FILE_LENGTH);
+  char* buf = malloc(BOARD_STRLEN);
   FILE* f = fopen("./board_white.txt", "r");
-  int bytes_read = fread(buf, sizeof(char), 772, f);
-  printf("%d\n", bytes_read);
-  printf("%s\n", buf);
+  int bytes_read = fread(buf, sizeof(char), BOARD_STRLEN, f);
+  //printf("%d\n", bytes_read);
+  //printf("%s\n", buf);
   fclose(f);
   return buf;
 }
 
 char* board_black() {
-  char* buf = malloc(BOARD_FILE_LENGTH);
+  char* buf = malloc(BOARD_STRLEN);
   FILE* f = fopen("./board_black.txt", "r");
-  int bytes_read = fread(buf, sizeof(char), 772, f);
-  printf("%d\n", bytes_read);
-  printf("%s\n", buf);
+  int bytes_read = fread(buf, sizeof(char), BOARD_STRLEN, f);
+  //printf("%d\n", bytes_read);
+  //printf("%s\n", buf);
   fclose(f);
   return buf;
 }
 
+void board_white_buf(char buf[BOARD_STRLEN]) {
+  FILE* f = fopen("./board_white.txt", "r");
+  int bytes_read = fread(buf, sizeof(char), BOARD_STRLEN, f);
+  fclose(f);
+}
+
+void board_black_buf(char buf[BOARD_STRLEN]) {
+  FILE* f = fopen("./board_black.txt", "r");
+  int bytes_read = fread(buf, sizeof(char), BOARD_STRLEN, f);
+  fclose(f);
+}
 
 /*
  * TODO: Clean up magic numbers in these functions
@@ -314,6 +325,26 @@ char* boardStrBlack(Board board) {
     }
   }
   return str;
+}
+
+void boardToBufWhite(Board board, char buf[BOARD_STRLEN]) {
+  board_white_buf(buf);
+  for(int r = 0; r < 8; r++) {
+    for(int c = 0; c < 8; c++) {
+      buf[655-86*r + 4*c] = pieceChar(board[8*r+c]);
+    }
+  }
+  buf[BOARD_STRLEN-1] = 0;
+}
+
+void boardToBufBlack(Board board, char buf[BOARD_STRLEN]) {
+  board_black_buf(buf);
+  for(int r = 0; r < 8; r++) {
+    for(int c = 0; c < 8; c++) {
+      buf[81+86*r - 4*c] = pieceChar(board[8*r+c]);
+    }
+  }
+  buf[BOARD_STRLEN-1] = 0;
 }
 
 

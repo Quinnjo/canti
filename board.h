@@ -1,5 +1,6 @@
 #ifndef BOARD_H
 #define BOARD_H
+#include "list.h"
 
 /*
  * Contains the types used for the game
@@ -24,6 +25,8 @@
 #define F 6
 #define G 7
 #define H 8
+
+#define BOARD_STRLEN 773
 
 /*
  * The squares of the chess board are numbered from 0 to 63
@@ -54,8 +57,6 @@
  *
  */
 
-
-
 typedef struct Piece {
   int id;
   int color;
@@ -76,7 +77,7 @@ int rank(int square);
 int file(int square);
 
 int squareFromString(char* str);
-void squareToString(char str[2], int square);
+void squareToString(char str[3], int square); /* str of length 2 */
 int squareFromCoords(int file, int rank);
 
 /*
@@ -112,5 +113,7 @@ void freeBoard(Board board);
 void printBoardSimple(Board board);
 char* boardStrWhite(Board board);
 char* boardStrBlack(Board board);
+void boardToBufWhite(Board board, char buf[BOARD_STRLEN]);
+void boardToBufBlack(Board board, char buf[BOARD_STRLEN]);
 
 #endif

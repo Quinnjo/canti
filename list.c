@@ -125,12 +125,25 @@ void resetHead(LList* list, int i) {
 LList* combineLLists(LList* L1, LList* L2) {
   assert(L1 && L2 && L1 != L2);
   LList* new = (LList*)malloc(sizeof(LList));
-
+  initList(new);
+  if(L1->len == 0 && L2->len == 0) {
+    free(L1);
+    free(L2);
+    return new;
+  }
   /* if L1 is empty, return a shallow copy of L2 */
   if(L1->len == 0) {
     new->head = L2->head;
     new->tail = L2->tail;
     new->len = L2->len;
+    free(L1);
+    free(L2);
+    return new;
+  }
+  if(L2->len == 0) {
+    new->head = L1->head;
+    new->tail = L1->tail;
+    new->len = L1->len;
     free(L1);
     free(L2);
     return new;

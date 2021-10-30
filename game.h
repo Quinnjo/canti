@@ -2,6 +2,7 @@
 #define GAME_H
 
 #include "list.h"
+#include "board.h"
 
 typedef struct Position {
   /* 
@@ -11,13 +12,15 @@ typedef struct Position {
    */
   Board board;
   int toMove; /* WHITE or BLACK */
+
+  // NOT IMPLEMENTED IN CURRENT VERSION
   /* true (1) or false (0) values */
-  int whiteCastlingRights;
-  int blackCastlingRights;
+  //int whiteCastlingRights;
+  //int blackCastlingRights;
   
   /* the square on which ep can happen
    * -1 if not possible (most of the time) */
-  int enPassantSquare;
+  //int enPassantSquare;
 } Position;
 
 typedef struct Game {
@@ -39,7 +42,7 @@ typedef struct Game {
 typedef struct Move {
   int start;
   int end;
-}
+} Move;
 
 /*
  * We need to keep track of:
@@ -58,10 +61,22 @@ typedef struct Move {
  */
 
 /*
+ * allocates and initializes a new position
+ */
+Position* newPosition();
+
+/*
+ * frees pos's attributes
+ * does not free the pos pointer itself
+ */
+void freePosition(Position* pos);
+
+/*
  * returns a new position made from performing the move, legal or otherwise
  * caller should free the return position
  */
 Position* genPositionFromMove(Move* move, Position* pos);
+void applyMoveToPosition(Move* move, Position* pos);
 
 /*
  * return 0 if neither player in check
@@ -71,6 +86,8 @@ Position* genPositionFromMove(Move* move, Position* pos);
  * return -1 on error
  */
 int inCheck(Position* pos);
+int inCheckWhite(Position* pos);
+int inCheckBlack(Position* pos);
 
 /*
  * Generate all the legal moves that can be played in position
@@ -81,6 +98,7 @@ int inCheck(Position* pos);
  * fail to remove them from check
  */
 LList* genLegalMoves(Position* pos);
+LList* genLegalMovesNoPrune(Position* pos);
 LList* genLegalMovesAtSquare(Position* pos, int square);
 LList* pruneLegalMoves(LList* moves, Position* pos);
 /*
@@ -95,8 +113,12 @@ LList* genRookMoves(Position* pos, int square);
 LList* genQueenMoves(Position* pos, int square);
 LList* genKingMoves(Position* pos, int square);
 
-/* return 1 if move is legal, 0 otherwise */
-int checkLegalMove(Move* move, Position* pos);
+/* return 1 if move does not endanger the king, 0 otherwise */
+int moveIsSafe(Move* move, Position* pos);
+int moveIsLegal(Move* move, Position* pos);
+
+/* return 1 if move is in list (list must contain only moves), 0 otherwise */
+int moveInList(LList* list, Move* move);
 
 
 
