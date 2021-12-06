@@ -48,12 +48,16 @@ int file(int square) {
   return square % 8 + 1;
 }
 
+/* return -1 on error */
 int squareFromString(char* str) {
   char c = tolower(str[0]);
-  assert(isalpha(c) && c <= 'h');
-  assert(isdigit(str[1]));
+  if(!(isalpha(c) && c <= 'h' && isdigit(str[1]))) {
+    return -1;
+  }
   int r = str[1] - '0';
-  assert(1 <= r && r <= 8);
+  if(!(1 <= r && r <= 8)) {
+    return -1;
+  }
   return squareFromCoords(c - 'a' + 1, r);
 }
 
@@ -61,13 +65,12 @@ int squareFromString(char* str) {
  * puts the result in the passed buffer str
  * str should have enough space for 2 characters
  */
-void squareToString(char str[3], int square) {
+void squareToString(char str[2], int square) {
   assert(valid(square));
   int f = file(square);
   int r = rank(square);
   str[0] = f - 1 + 'a';
   str[1] = r + '0';
-  str[2] = 0;
 }
 
 int squareFromCoords(int file, int rank) {

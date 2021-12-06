@@ -92,6 +92,14 @@ LList* pruneLegalMoves(LList* moves, Position* pos) {
   return moves;
 }
 
+int numberLegalMoves(Position* pos) {
+  LList* moves = genLegalMoves(pos);
+  int n = moves->len;
+  freeList(moves);
+  free(moves);
+  return n;
+}
+
 LList* genPawnMoves(Position* pos, int square) {
   Board board = pos->board;
   assert(board[square]->id == PAWN);
