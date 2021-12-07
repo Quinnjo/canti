@@ -1,14 +1,21 @@
+#ifndef BOARD_H
+#define BOARD_H
+#include "list.h"
 
 /*
  * Contains the types used for the game
  */
 
-#define KING 0
-#define QUEEN 1
-#define BISHOP 2
-#define KNIGHT 3
+#define EMPTY 0
+#define PAWN 1
+#define KNIGHT 2
+#define BISHOP 3
 #define ROOK 4
-#define PAWN 5
+#define QUEEN 5
+#define KING 6
+
+#define WHITE 1
+#define BLACK 2
 
 #define A 1
 #define B 2
@@ -18,6 +25,8 @@
 #define F 6
 #define G 7
 #define H 8
+
+#define BOARD_STRLEN 773
 
 /*
  * The squares of the chess board are numbered from 0 to 63
@@ -48,24 +57,12 @@
  *
  */
 
-
 typedef struct Piece {
   int id;
   int color;
-  int square;
 } Piece;
 
-typedef struct Move {
-  Piece* piece;
-  int start_square;
-  int end_square;
-
-  /* Other potential fields:
-   * Number
-   * Flags (e.p.)
-   */
-
-} Move;
+typedef Piece** Board;
 
 /*
  * Return 1 if square is valid (0 <= square < 64)
@@ -80,7 +77,7 @@ int rank(int square);
 int file(int square);
 
 int squareFromString(char* str);
-void squareToString(char str[2], int square);
+void squareToString(char str[3], int square); /* str of length 2 */
 int squareFromCoords(int file, int rank);
 
 /*
@@ -101,7 +98,22 @@ int southwest(int square);
 int west(int square);
 int northwest(int square);
 
+char pieceChar(Piece* piece);
 char* pieceToString(Piece* p);
 char pieceToChar(Piece* p);
 int charToPieceID(char c);
 
+/* 
+ * Allocate/Free each piece on the board in memory
+ * Should receive a board with space for 64 pieces
+ */
+void makeBoard(Board board);
+void freeBoard(Board board);
+
+void printBoardSimple(Board board);
+char* boardStrWhite(Board board);
+char* boardStrBlack(Board board);
+void boardToBufWhite(Board board, char buf[BOARD_STRLEN]);
+void boardToBufBlack(Board board, char buf[BOARD_STRLEN]);
+
+#endif
