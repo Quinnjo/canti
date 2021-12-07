@@ -79,15 +79,19 @@ int handleCommand(char* input) {
 }
 */
 
-/* Usage: ./client <hostname> <username>*/
 int main(int argc, char* argv[]) {
-  if(argc < 3) {
-    printf("Please enter the desired hostname as an argument\n");
+  int debug = 0;
+
+  if(argc < 2) {
+    printf("Usage: ./<program> <hostname> [debug]\n");
     return 1;
+  }
+  if(argc > 2) {
+    debug = 1;
+    printf("debug mode on!\n");
   }
 
   char* hostname = argv[1];
-  char* username = argv[2];
 
   int sid = socket(PF_INET,SOCK_STREAM,0);
   struct sockaddr_in srv;
@@ -122,7 +126,10 @@ int main(int argc, char* argv[]) {
 	  checkInput = 0;
 	  continue;
 	}
-	int wb = write(sid, command, strlen(command)+1); //send the null byte
+	int wb = write(sid, command, strlen(command)/*+1*/); //send the null byte
+	if(debug) {
+	  printf("Sending command: %s", command);
+	}
 	free(command);
       } else if(FD_ISSET(sid, &fdin)) {
 	/* we must receive a message from the server */

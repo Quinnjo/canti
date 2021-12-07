@@ -19,6 +19,12 @@
 #define MAX_GAMES 8
 #define MAX_SPECTATORS 8
 
+#define TIMEOUT_S 0
+#define TIMEOUT_US 10000 /* 10 ms, 10000 us */
+
+/* global integer */
+int debug;
+
 typedef struct Game {
   Position* pos;
   int status; /* WAITING, ONGOING, COMPLETED */
@@ -50,6 +56,13 @@ void checkError(int status,int line) {
   if (status < 0) {
     printf("socket error(%d)-%d: [%s]\n",getpid(),line,strerror(errno));
     exit(-1);
+  }
+}
+
+
+int logStr(char* str) {
+  if(debug) {
+    printf("%s\n", str);
   }
 }
 
@@ -143,6 +156,21 @@ int dataToRead(int fd) {
   return selectResult > 0;
 }
 
+/* sends the current board to players and spectators */
+/* Potential issue: does boardStr function null terminate the string? */
+void sendBoard(Game* game) {
+  char wbuf[BOARD_STRLEN], bbuf[BOARD_STRLEN];
+  boardToBufWhite(game->pos->board, wbuf);
+  boardToBufBlack(game->pos->board, bbuf);
+  write(game->white, wbuf, BOARD_STRLEN);
+  for(int i = 0; i < MAX_SPECTATORS; i++) {
+    if(game->spectators[i]) {
+      write(game->spectators[i], wbuf, BOARD_STRLEN);
+    }
+  }
+  write(game->black, bbuf, BOARD_STRLEN);
+}
+
 
 #define COMMAND_BUFSIZE 16
 #define COMMANDARG_BUFSIZE 16
@@ -163,6 +191,7 @@ void deconstructGame(Game* game) {
     }
   }
 
+  pthread_mutex_unlock(&game->mtx);
   pthread_exit(NULL); /* kill the game thread */
 }
 
@@ -290,6 +319,7 @@ void checkEndGame(Game* game) {
 
 void commandMove(int fd, Game* game) {
   /* get Move object from command input */
+  logStr("processing move input");
   char buf[5];
   Move m;
   if(dataToRead(fd)) {
@@ -361,6 +391,10 @@ void commandMove(int fd, Game* game) {
     write(fd, msg, sizeof(msg));
     return;
   }
+
+  /* TODO: see if boardStr functions null terminate the strings */
+  sendBoard(game);
+
   /* check for game end conditions */
   checkEndGame(game);
 }
@@ -457,8 +491,10 @@ void processCommandPlayer(int fd, char c[], Game* game) {
     commandResign(fd, game);
   } else {
     /* unrecognized command */
+    /*
     char msg[] = "Your command was not recognized.\n";
     write(fd, msg, sizeof(msg));
+    */
   }
 }
 
@@ -471,6 +507,7 @@ void handleCommandPlayer(int fd, Game* game) {
     if(rb == 0) {
       /* this player resigns by disconnecting */
       game->n_spectators -= removeInt(fd, game->spectators);
+      close(fd);
       return;
     }
 
@@ -483,13 +520,15 @@ void handleCommandPlayer(int fd, Game* game) {
   /* buf must always end in a 0 */
   buf[COMMAND_BUFSIZE-1] = 0;
   processCommandPlayer(fd, buf, game);
+  logStr("finished processing player command");
 }
 
 /* spectator commands */
 void commandDisconnectSpectator(int fd, Game* game) {
-  game->n_spectators -= removeInt(fd, game->players);
-  char msg[] = "You have been successfully disconnected.\n";
+  game->n_spectators -= removeInt(fd, game->spectators);
+  char msg[] = "You have been successfully disconnected.\n"; 
   write(fd, msg, sizeof(msg));
+  close(fd);
 }
 
 void processCommandSpectator(int fd, char c[], Game* game) {
@@ -527,6 +566,7 @@ void handleCommandSpectator(int fd, Game* game) {
 
 /* receives a game pointer */
 void* gameHandler(void* data) {
+  logStr("new game handler thread");
   pthread_detach(pthread_self());
   Game* game = data;
   pthread_mutex_lock(&game->mtx);
@@ -535,7 +575,10 @@ void* gameHandler(void* data) {
   while(game->n_players < 2 && game->status != ONGOING) {
     pthread_cond_wait(&game->ready, &game->mtx);
   }
-  /* randomize colors */
+
+  char wmsg[] = "The game has started. You have the white pieces.\n";
+  char bmsg[] = "The game has started. You have the black pieces.\n";
+    /* randomize colors */
   if(random() % 2 == 0) {
     game->white = game->players[0];
     game->black = game->players[1];
@@ -543,8 +586,13 @@ void* gameHandler(void* data) {
     game->white = game->players[1];
     game->black = game->players[0];
   }
+
+  sendBoard(game);
+  write(game->white, wmsg, sizeof(wmsg));
+  write(game->black, bmsg, sizeof(bmsg));
+
   pthread_mutex_unlock(&game->mtx);
-  
+    
   while(1) {
     /* there are now 2 players and we are ready to accept input and start the game */
     fd_set fdin;
@@ -563,7 +611,8 @@ void* gameHandler(void* data) {
     }
     pthread_mutex_unlock(&game->mtx);
 
-    int selectResult = select(max_fd+1, &fdin, NULL, NULL, NULL);
+    struct timeval timeout = {TIMEOUT_S, TIMEOUT_US};
+    int selectResult = select(max_fd+1, &fdin, NULL, NULL, &timeout);
 
     if(selectResult > 0) {
       /* a client has new input for us to process */
@@ -571,10 +620,8 @@ void* gameHandler(void* data) {
       /* was the input from one of the players? */
       if(FD_ISSET(game->white, &fdin)) {
 	handleCommandPlayer(game->white, game);
-	break;
       } else if(FD_ISSET(game->black, &fdin)) {
 	handleCommandPlayer(game->black, game);
-	break;
       }
 
       for(int i = 0; i < MAX_SPECTATORS; i++) {
@@ -582,7 +629,6 @@ void* gameHandler(void* data) {
 	if(FD_ISSET(cur_fd, &fdin)) {
 	  /* Handle spectator command*/
 	  handleCommandSpectator(cur_fd, game);
-	  break;
 	}
       }
       pthread_mutex_unlock(&game->mtx);
@@ -602,6 +648,7 @@ void commandNewGame(int fd, ProtectedIntArray* clients, ProtectedGameArray* game
   for(int i = 0; i < MAX_GAMES; i++) {
     /* is this an empty spot? */
     if(games->arr[i] == NULL) {
+      logStr("new game in empty slot");
       /* create the new game and give it our client */
       games->arr[i] = newGame(i);
       games->arr[i]->players[0] = fd;
@@ -619,6 +666,7 @@ void commandNewGame(int fd, ProtectedIntArray* clients, ProtectedGameArray* game
     /* if so, destroy this game and replace it */
     pthread_mutex_lock(&games->arr[i]->mtx);
     if(games->arr[i]->status == COMPLETED) {
+      logStr("cleaning up dead game");
       pthread_mutex_unlock(&games->arr[i]->mtx);
       /* the game thread should have already died, so no one should grab this mutex */
       destroyGame(games->arr[i]);
@@ -642,6 +690,10 @@ void commandNewGame(int fd, ProtectedIntArray* clients, ProtectedGameArray* game
     /* we did not successfully add a game */
     char msg[] = "There are too many ongoing games to start a new game.\n";
     write(fd, msg, sizeof(msg));
+  } else {
+    /* we successfully added a game */
+    char msg[] = "Created a new game. Please wait for another player to join.\n";
+    write(fd, msg, sizeof(msg));
   }
 }
 
@@ -659,6 +711,7 @@ void commandJoinPlay(int fd, ProtectedIntArray* clients, ProtectedGameArray* gam
 	/* end of file or the connection has closed */
 	/* either way, disconnect this client and do nothing */
 	removeInt(fd, clients->arr);
+	close(fd);
 	return;
       }
       /* we've hit a newline */
@@ -798,6 +851,7 @@ void commandDisconnect(int fd, ProtectedIntArray* clients, ProtectedGameArray* g
   removeInt(fd, clients->arr);
   char msg[] = "You have been successfully disconnected.\n";
   write(fd, msg, sizeof(msg));
+  close(fd);
 }
 
 
@@ -821,6 +875,8 @@ void processCommandHub(int fd, char c[], ProtectedIntArray* clients, ProtectedGa
   } else {
     char msg[] = "Your command was not recognized.\n";
     write(fd, msg, sizeof(msg));
+    logStr("client sent unrecognized command");
+    printf("unrecognized: %s\n", c);
     /* unrecognized command */
   }
 }
@@ -863,6 +919,8 @@ void* hubRoom(void* data) {
   ProtectedIntArray* clients = args->clients;
   ProtectedGameArray* games = args->games;
 
+  logStr("Hub thread ready");
+
   /* the main thread adds new connections to the client list, we must listen to them */
   while(1) {
     fd_set fdin;
@@ -881,9 +939,11 @@ void* hubRoom(void* data) {
     pthread_mutex_unlock(&clients->mtx);
 
     /* select */
-    int selectResult = select(max_fd+1, &fdin, NULL, NULL, NULL);
+    struct timeval timeout = {TIMEOUT_S, TIMEOUT_US}; /* wait 10 milliseconds for input */
+    int selectResult = select(max_fd+1, &fdin, NULL, NULL, &timeout);
 
     if(selectResult > 0) {
+      logStr("New input from a client");
       /* TODO: watch out for deadlocking during comand execution */
       /* potential solution: count up to max_fd and don't use mutex */
       pthread_mutex_lock(&clients->mtx);
@@ -891,6 +951,7 @@ void* hubRoom(void* data) {
 	int cur_fd = clients->arr[i];
 	if(FD_ISSET(cur_fd, &fdin)) {
 	  /* client cur_fd has new input to process */
+	  logStr("Found the ready client");
 	  /* handle the client's command */
 	  /* perhaps make a new thread to do this? */
 	  CommandHubThreadArgs args = {cur_fd, clients, games};
@@ -900,6 +961,7 @@ void* hubRoom(void* data) {
 	  */
 
 	  /* right now, every command executed has the mutex for the client list already */
+	  logStr("handling command");
 	  handleCommandHub(&args);
 	  break;
 	}
@@ -910,7 +972,16 @@ void* hubRoom(void* data) {
   return NULL;
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+  /* set up logging */
+  if(argc > 1) {
+    /* debug mode on */
+    debug = 1;
+    logStr("debug mode on!");
+  } else {
+    debug = 0;
+  }
+
   /* create thread-safe arrays in which to keep the clients and games */
   ProtectedIntArray* clients = malloc(sizeof(ProtectedIntArray) + sizeof(int)*MAX_CONNECTIONS);
   ProtectedGameArray* games = malloc(sizeof(ProtectedGameArray) + sizeof(Game)*MAX_GAMES);
@@ -924,6 +995,7 @@ int main() {
   pthread_mutex_init(&games->mtx, NULL);
 
   /* create the hub room thread */
+  printf("Creating Hub Room thread\n");
   HubThreadArgs args = {clients, games};
   pthread_t hub;
   pthread_create(&hub, NULL, hubRoom, &args);
@@ -945,6 +1017,7 @@ int main() {
 	if(strncmp("!exit", buf, 5) == 0) {
 	  /* exit the server */
 	  printf("Received kill command, terminating all threads...\n");
+	  close(sid);
 	  exit(0);
 	}
       } else if(FD_ISSET(sid, &fdin)) {
@@ -953,6 +1026,7 @@ int main() {
 	socklen_t cliSize = (socklen_t)sizeof(struct sockaddr_in);
 	int fd = accept(sid, (struct sockaddr*)&cli, &cliSize);
 	/* we've accepted a new connection, find a slot for it in the clients array */
+	int accepted = 0;
 	pthread_mutex_lock(&clients->mtx);
 	for(int i = 0; i < MAX_CONNECTIONS; i++) {
 	  if(clients->arr[i] == 0) {
@@ -960,8 +1034,11 @@ int main() {
 	    printf("Accepted a new client with descriptor %d in slot %d\n", fd, i);
 	    char msg[] = "Connection accepted. Enter commands as you wish. Type \"help\" for help.\n";
 	    write(fd, msg, sizeof(msg));
+	    accepted = 1;
 	    break;
 	  }
+	}
+	if(!accepted) {
 	  printf("Couldn't fit a client in with descriptor %d. Closing socket...\n", fd);
 	  char full[] = "We're full right now. Please try again later.\n";
 	  write(fd, full, sizeof(full));
