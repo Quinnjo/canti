@@ -6,6 +6,7 @@ Canti is a client-server chess application written in C. Canti was developed to 
 ## Usage
 To compile, run `make` in the terminal. Two executables, `canti` and `canitid` will be created in the directory.
 The client program is `canti`. The command `./canti <hostname> [debug]` will run the program connecting to the given hostname, and takes an optional debug argument. The client can use a number of commands once connected.
+
 **For clients in the Hub Room (immediately after connecting):**
 * `newgame` — create a new game
 * `listgames` — list all games that the server is handling with an ID, player count, and spectator count
