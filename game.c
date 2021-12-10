@@ -457,6 +457,11 @@ void applyMoveToPosition(Move* move, Position* pos) {
   board[move->end]->id = board[move->start]->id;
   board[move->start]->id = EMPTY;
   board[move->start]->color = EMPTY;
+
+  /* check for pawn promotion */
+  if(rank(move->end) == 8 || rank(move->end) == 1) {
+    board[move->end]->id = QUEEN;
+  }
 }
 
 
