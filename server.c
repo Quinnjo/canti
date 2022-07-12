@@ -324,7 +324,7 @@ void commandMove(int fd, Game* game) {
   Move m;
   if(dataToRead(fd)) {
     int rb = read(fd, buf, 4);
-    buf[5] = 0;
+    buf[4] = 0;
     if(rb < 4) {
       /* there must be four characters in the input */
       char msg[] = "Could not process the given move.\n";
